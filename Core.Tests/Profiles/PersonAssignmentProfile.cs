@@ -7,12 +7,12 @@ namespace Core.Tests.Profiles
     {
         public PersonAssignmentProfile()
         {
-            Map(x => x.Id);
-            Map(x => x.Age);
-            Map(x => x.Firstname);
-            Map(x => x.Lastname);
-            Map(x => x.IsPressent);
-            Map(x => x.DateOfBirth);
+            Map(x => x.Id)
+                .Then(x => x.Age)
+                .Then(x => x.Firstname)
+                .Then(x => x.Lastname)
+                .Then(x => x.IsPressent)
+                .Then(x => x.DateOfBirth);
         }
     }
 }

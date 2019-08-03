@@ -37,14 +37,33 @@ namespace EntityUpdater.Abstracts
                     return false;
             }
         }
-
+        
         /// <summary>
         /// Map property
         /// </summary>
-        /// <param name="expr"></param>
-        public void Map(Expression<Func<T, object>> expr)
+        /// <param name="exprs"></param>
+        protected MapperHelper<T> Map(params Expression<Func<T, object>>[] exprs)
         {
-            _memberExprs = _memberExprs.Add(expr);
+            _memberExprs = _memberExprs.AddRange(exprs);
+
+            return new MapperHelper<T>(x => Map(x));
+        }
+    }
+    
+    public class MapperHelper<T>
+    {
+        private readonly Action<Expression<Func<T, object>>[]> _callback;
+            
+        public MapperHelper(Action<Expression<Func<T, object>>[]> callback)
+        {
+            _callback = callback;
+        }
+            
+        public MapperHelper<T> Then(params Expression<Func<T, object>>[] exprs)
+        {
+            _callback(exprs);
+
+            return this;
         }
     }
 }

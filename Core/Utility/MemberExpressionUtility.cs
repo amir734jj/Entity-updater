@@ -24,21 +24,22 @@ namespace EntityUpdater.Utility
             var entity = Expression.Parameter(type);
             var dto = Expression.Parameter(type);
 
-            var assignments = exprs.Select(expr =>
-            {
-                var memberInfo = new MemberExpressionVisitor(expr).ResolveMemberInfo();
-                var memberAccessExpr = Expression.MakeMemberAccess(dto, memberInfo);
-                var setterMethodInfo = ((PropertyInfo) memberInfo).GetSetMethod();
-
-                if (setterMethodInfo == null)
+            var assignments = exprs.Select(x => new MemberExpressionVisitor(x).ResolveMemberInfo())
+                .ToHashSet()
+                .Select(memberInfo =>
                 {
-                    throw new Exception($"Setter for member: {memberInfo.Name} does not exist");
-                }
+                    var memberAccessExpr = Expression.MakeMemberAccess(dto, memberInfo);
+                    var setterMethodInfo = ((PropertyInfo) memberInfo).GetSetMethod();
 
-                var assignmentExpr = Expression.Call(entity, setterMethodInfo, memberAccessExpr);
+                    if (setterMethodInfo == null)
+                    {
+                        throw new Exception($"Setter for member: {memberInfo.Name} does not exist");
+                    }
 
-                return assignmentExpr;
-            });
+                    var assignmentExpr = Expression.Call(entity, setterMethodInfo, memberAccessExpr);
+
+                    return assignmentExpr;
+                });
 
             var body = Expression.Block(assignments);
 
@@ -58,6 +59,7 @@ namespace EntityUpdater.Utility
 
         private readonly Expression _expr;
 
+        /// <inheritdoc />
         /// <summary>
         /// Constructor
         /// </summary>
