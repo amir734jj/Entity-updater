@@ -35,13 +35,13 @@ public class PersonAssignmentProfile : AssignmentProfile<Person>
 }
 ```
 
-var buld
+### Build the utility:
 ```csharp
+var utility = new AssignmentUtility(Assembly.GetExecutingAssembly());
+// or var utility = new AssignmentUtility(new [] { new PersonAssignmentProfile() });
 
+Person entity = ...;
+Person dto = ...;
 
-var assignmentUtility = new AssignmentUtility(Assembly.GetExecutingAssembly());
-// or var assignmentUtility = new AssignmentUtility(new [] { new PersonAssignmentProfile() });
-
-
-
+Update(entity, dto);
 ```
