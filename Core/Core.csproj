@@ -1,8 +1,15 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>netcoreapp2.2</TargetFramework>
+        <TargetFramework>netcoreapp2.1</TargetFramework>
         <RootNamespace>EntityUpdater</RootNamespace>
+        <AssemblyName>Entity-updater</AssemblyName>
+        <LangVersion>latest</LangVersion>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Description>Update Entity from DTO using a simple mapper profile</Description>
+        <PackageProjectUrl>https://github.com/amir734jj/Entity-updater</PackageProjectUrl>
+        <Version>1.0.0</Version>
+        <PackageReleaseNotes>Working state.</PackageReleaseNotes>
     </PropertyGroup>
 
 </Project>
