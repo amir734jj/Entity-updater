@@ -1,6 +1,9 @@
 # Entity-updater
 Update Entity from DTO using a simple mapper profile without using any reflection
 
+[![pipeline status](https://gitlab.com/hesamian/Entity-updater/badges/master/pipeline.svg)](https://gitlab.com/hesamian/Entity-updater/commits/master)
+
+
 ### Person POCO:
 ```csharp
 public class Person
