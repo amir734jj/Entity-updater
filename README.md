@@ -43,5 +43,5 @@ var utility = new AssignmentUtility(Assembly.GetExecutingAssembly());
 Person entity = ...;
 Person dto = ...;
 
-Update(entity, dto);
+utility.Update(entity, dto);
 ```
