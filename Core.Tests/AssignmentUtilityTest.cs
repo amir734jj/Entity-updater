@@ -15,7 +15,11 @@ namespace Core.Tests
         public AssignmentUtilityTest()
         {
             _fixture = new Fixture();
-            _assignmentUtility = new AssignmentUtility(Assembly.GetExecutingAssembly());
+
+            _assignmentUtility = AssignmentUtility.Build(_ =>
+            {
+                _.Assembly(Assembly.GetExecutingAssembly());
+            });
         }
         
         [Fact]
