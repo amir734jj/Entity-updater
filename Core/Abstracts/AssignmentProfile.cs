@@ -46,24 +46,22 @@ namespace EntityUpdater.Abstracts
         {
             _memberExprs = _memberExprs.AddRange(exprs);
 
-            return new MapperHelper<T>(x => Map(x));
+            return new MapperHelper<T>(Map);
         }
     }
     
     public class MapperHelper<T>
     {
-        private readonly Action<Expression<Func<T, object>>[]> _callback;
-            
-        public MapperHelper(Action<Expression<Func<T, object>>[]> callback)
+        private readonly Func<Expression<Func<T, object>>[], MapperHelper<T>> _callback;
+
+        public MapperHelper(Func<Expression<Func<T, object>>[], MapperHelper<T>> callback)
         {
             _callback = callback;
         }
-            
+
         public MapperHelper<T> Then(params Expression<Func<T, object>>[] exprs)
         {
-            _callback(exprs);
-
-            return this;
+            return _callback(exprs);
         }
     }
 }
