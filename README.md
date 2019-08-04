@@ -3,7 +3,11 @@ Update Entity from DTO using a simple mapper profile without using any reflectio
 
 [![pipeline status](https://gitlab.com/hesamian/Entity-updater/badges/master/pipeline.svg)](https://gitlab.com/hesamian/Entity-updater/commits/master)
 
-The idea is this library will generate assignments given specified properties using LINQ expressions:
+[NuGet](https://www.nuget.org/packages/Entity-updater/)
+
+This library is useful to update "Entities" (special objects that are generated from EntityFramework) from
+DTO (Data-Transfer-Object or objects that are coming from API layer) when Entity and DTO have the same type.
+This library will generate assignments given specified properties using LINQ expression trees:
 
 ```csharp
 entity.Id = dto.Id;
