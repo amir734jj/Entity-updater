@@ -74,7 +74,7 @@ namespace EntityUpdater.Abstracts
                     {
                         if (!entityPropValDict.Contains(dtoPropValDictEntry.Key))
                         {
-                            dtoPropValDict[dtoPropValDictEntry.Key] = dtoPropValDictEntry.Value;
+                            entityPropValDict[dtoPropValDictEntry.Key] = dtoPropValDictEntry.Value;
                         }
                     }
 
