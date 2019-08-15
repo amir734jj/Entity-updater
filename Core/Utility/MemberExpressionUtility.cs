@@ -4,6 +4,8 @@ using System.Collections.Immutable;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using EntityUpdater.Extensions;
+using EntityUpdater.Interfaces;
 
 namespace EntityUpdater.Utility
 {
@@ -15,35 +17,53 @@ namespace EntityUpdater.Utility
         /// <summary>
         /// Generate assignment function from the provided member
         /// </summary>
+        /// <param name="profile"></param>
         /// <param name="exprs"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static Action<T, T> GenerateAssignment<T>(IEnumerable<Expression<Func<T, object>>> exprs)
+        public static Action<T, T> GenerateAssignment<T>(IAssignmentProfile profile,
+            IEnumerable<Expression<Func<T, object>>> exprs)
         {
             var type = typeof(T);
-            var entity = Expression.Parameter(type);
-            var dto = Expression.Parameter(type);
+            var entityExpr = Expression.Parameter(type);
+            var dtoExpr = Expression.Parameter(type);
 
-            var assignments = exprs.Select(x => new MemberExpressionVisitor(x).ResolveMemberInfo())
-                .ToHashSet()
-                .Select(memberInfo =>
+            var assignments = exprs
+                .Select(x => (Key: profile, Value: x))
+                .DistinctBy(x => x.Value)
+                .Select(x => (x.Key, new MemberExpressionVisitor(x.Value).ResolveMemberInfo()))
+                .Select(tuple =>
                 {
-                    var memberAccessExpr = Expression.MakeMemberAccess(dto, memberInfo);
-                    var setterMethodInfo = ((PropertyInfo) memberInfo).GetSetMethod();
+                    var (key, value) = tuple;
+
+                    var propertyInfo = (PropertyInfo) value;
+                    var memberAccessExprEntity = Expression.MakeMemberAccess(entityExpr, value);
+                    var memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, value);
+                    var setterMethodInfo = propertyInfo.GetSetMethod();
 
                     if (setterMethodInfo == null)
                     {
-                        throw new Exception($"Setter for member: {memberInfo.Name} does not exist");
+                        throw new Exception($"Setter for member: {value.Name} does not exist");
                     }
 
-                    var assignmentExpr = Expression.Call(entity, setterMethodInfo, memberAccessExpr);
+                    var updateFuncExpr = Expression.Call(
+                        Expression.Constant(key),
+                        key.UpdatePropertyMethodName,
+                        new[] {propertyInfo.PropertyType},
+                        memberAccessExprEntity,
+                        memberAccessExprDto
+                    );
+
+                    var castRsltExpr = Expression.Convert(updateFuncExpr, propertyInfo.PropertyType);
+
+                    var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castRsltExpr);
 
                     return assignmentExpr;
                 });
 
             var body = Expression.Block(assignments);
 
-            var lambda = Expression.Lambda<Action<T, T>>(body, entity, dto);
+            var lambda = Expression.Lambda<Action<T, T>>(body, entityExpr, dtoExpr);
 
             return lambda.Compile();
         }
