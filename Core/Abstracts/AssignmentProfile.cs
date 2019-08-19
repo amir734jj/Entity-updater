@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Linq.Expressions;
 using EntityUpdater.Interfaces;
 using EntityUpdater.Utility;
@@ -9,15 +10,20 @@ using EntityUpdater.Utility;
 namespace EntityUpdater.Abstracts
 {
     public abstract class AssignmentProfile<T> : IAssignmentProfile
-    {        
-        private ImmutableList<Expression<Func<T, object>>> _memberExprs = ImmutableList<Expression<Func<T, object>>>.Empty;
+    {
+        private ImmutableList<Expression<Func<T, object>>> _memberExprs;
 
         private Action<T, T> _resolveAssignmentAction;
+
+        protected AssignmentProfile()
+        {
+            _memberExprs = ImmutableList<Expression<Func<T, object>>>.Empty;
+        }
 
         /// <summary>
         /// Update method name
         /// </summary>
-        public string UpdatePropertyMethodName { get; } = nameof(UpdateProperty);
+        public virtual string UpdatePropertyMethodName { get; } = nameof(UpdateProperty);
 
         public void ResolveAssignment(IReadOnlyList<IAssignmentProfile> profiles, object entity, object dto)
         {
@@ -63,6 +69,7 @@ namespace EntityUpdater.Abstracts
             switch (dtoPropVal)
             {
                 case IList dtoPropValList when entityPropVal is IList entityPropValList:
+                    // Apply addition
                     foreach (var dtoPropValListItem in dtoPropValList)
                     {
                         if (!entityPropValList.Contains(dtoPropValListItem))
@@ -70,14 +77,33 @@ namespace EntityUpdater.Abstracts
                             entityPropValList.Add(dtoPropValListItem);
                         }
                     }
-                        
+
+                    // Apply deletion
+                    foreach (var entityPropValListItem in entityPropValList)
+                    {
+                        if (!dtoPropValList.Contains(entityPropValListItem))
+                        {
+                            entityPropValList.Remove(entityPropValListItem);
+                        }
+                    }
+
                     return entityPropVal;
                 case IDictionary dtoPropValDict when entityPropVal is IDictionary entityPropValDict:
+                    // Apply addition
                     foreach (DictionaryEntry dtoPropValDictEntry in dtoPropValDict)
                     {
                         if (!entityPropValDict.Contains(dtoPropValDictEntry.Key))
                         {
                             entityPropValDict[dtoPropValDictEntry.Key] = dtoPropValDictEntry.Value;
+                        }
+                    }
+
+                    // Apply deletion
+                    foreach (DictionaryEntry entityPropValDictEntry in entityPropValDict)
+                    {
+                        if (!dtoPropValDict.Contains(entityPropValDictEntry.Key))
+                        {
+                            entityPropValDict.Remove(entityPropValDictEntry.Key);
                         }
                     }
 
@@ -89,7 +115,7 @@ namespace EntityUpdater.Abstracts
             }
         }
     }
-    
+
     public class MapperHelper<T>
     {
         private readonly Func<Expression<Func<T, object>>[], MapperHelper<T>> _callback;
