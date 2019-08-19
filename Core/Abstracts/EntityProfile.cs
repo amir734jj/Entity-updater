@@ -1,9 +1,8 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using EntityUpdater.Interfaces;
 using EntityUpdater.Utility;
 
@@ -19,11 +18,6 @@ namespace EntityUpdater.Abstracts
         {
             _memberExprs = ImmutableList<Expression<Func<T, object>>>.Empty;
         }
-
-        /// <summary>
-        /// Update method name
-        /// </summary>
-        public virtual string UpdatePropertyMethodName { get; } = nameof(UpdateProperty);
 
         public void ResolveAssignment(IEnumerable<IEntityProfile> profiles, object entity, object dto)
         {
@@ -53,6 +47,8 @@ namespace EntityUpdater.Abstracts
 
         public Type Type { get; } = typeof(T);
 
+        public MethodInfo ComparerMethodInfo { get; private set; }
+
         /// <summary>
         /// Map property
         /// </summary>
@@ -61,73 +57,31 @@ namespace EntityUpdater.Abstracts
         {
             _memberExprs = _memberExprs.AddRange(exprs);
 
-            return new MapperHelper<T>(Map);
-        }
-
-        public virtual object UpdateProperty<TPropertyValue>(TPropertyValue entityPropVal, TPropertyValue dtoPropVal)
-        {
-            switch (dtoPropVal)
-            {
-                case IList dtoPropValList when entityPropVal is IList entityPropValList:
-                    // Apply addition
-                    foreach (var dtoPropValListItem in dtoPropValList)
-                    {
-                        if (!entityPropValList.Contains(dtoPropValListItem))
-                        {
-                            entityPropValList.Add(dtoPropValListItem);
-                        }
-                    }
-
-                    // Apply deletion
-                    foreach (var entityPropValListItem in entityPropValList)
-                    {
-                        if (!dtoPropValList.Contains(entityPropValListItem))
-                        {
-                            entityPropValList.Remove(entityPropValListItem);
-                        }
-                    }
-
-                    return entityPropVal;
-                case IDictionary dtoPropValDict when entityPropVal is IDictionary entityPropValDict:
-                    // Apply addition
-                    foreach (DictionaryEntry dtoPropValDictEntry in dtoPropValDict)
-                    {
-                        if (!entityPropValDict.Contains(dtoPropValDictEntry.Key))
-                        {
-                            entityPropValDict[dtoPropValDictEntry.Key] = dtoPropValDictEntry.Value;
-                        }
-                    }
-
-                    // Apply deletion
-                    foreach (DictionaryEntry entityPropValDictEntry in entityPropValDict)
-                    {
-                        if (!dtoPropValDict.Contains(entityPropValDictEntry.Key))
-                        {
-                            entityPropValDict.Remove(entityPropValDictEntry.Key);
-                        }
-                    }
-
-                    return entityPropVal;
-                case object x when x == (object) default(TPropertyValue):
-                    return dtoPropVal;
-                default:
-                    return dtoPropVal;
-            }
+            return new MapperHelper<T>(Map, comparerMethodInfo => ComparerMethodInfo = comparerMethodInfo);
         }
     }
 
     public class MapperHelper<T>
     {
-        private readonly Func<Expression<Func<T, object>>[], MapperHelper<T>> _callback;
+        private readonly Func<Expression<Func<T, object>>[], MapperHelper<T>> _propertyDef;
 
-        public MapperHelper(Func<Expression<Func<T, object>>[], MapperHelper<T>> callback)
+        private readonly Action<MethodInfo> _comparisonDef;
+
+        public MapperHelper(Func<Expression<Func<T, object>>[], MapperHelper<T>> propertyDef,
+            Action<MethodInfo> comparisonDef)
         {
-            _callback = callback;
+            _propertyDef = propertyDef;
+            _comparisonDef = comparisonDef;
         }
 
         public MapperHelper<T> Then(params Expression<Func<T, object>>[] exprs)
         {
-            return _callback(exprs);
+            return _propertyDef(exprs);
+        }
+
+        public void Compare(Func<T, T, bool> comparison)
+        {
+            _comparisonDef(comparison.Method);
         }
     }
 }

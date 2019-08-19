@@ -12,7 +12,8 @@ namespace Core.Tests.Profiles
                 .Then(x => x.Firstname)
                 .Then(x => x.Lastname)
                 .Then(x => x.IsPressent)
-                .Then(x => x.DateOfBirth);
+                .Then(x => x.DateOfBirth)
+                .Compare((x, y) => x.Id == y.Id);
         }
     }
 }

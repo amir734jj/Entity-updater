@@ -6,6 +6,7 @@ using System.Linq.Expressions;
 using System.Reflection;
 using EntityUpdater.Extensions;
 using EntityUpdater.Interfaces;
+using static EntityUpdater.Utility.MemberUpdaterUtility;
 
 namespace EntityUpdater.Utility
 {
@@ -26,50 +27,48 @@ namespace EntityUpdater.Utility
             IEntityProfile profile,
             IEnumerable<Expression<Func<T, object>>> exprs)
         {
-            var type = typeof(T);
-            var entityExpr = Expression.Parameter(type);
-            var dtoExpr = Expression.Parameter(type);
+            var entityExpr = Expression.Parameter(profile.Type);
+            var dtoExpr = Expression.Parameter(profile.Type);
 
             var assignments = exprs
-                .Select(x => (Key: profile, Value: x))
-                .DistinctBy(x => x.Value)
-                .Select(x => (x.Key, new MemberExpressionVisitor(x.Value).ResolveMemberInfo()))
-                .Select(tuple =>
+                .DistinctBy(x => x)
+                .Select(x => new MemberExpressionVisitor(x).ResolveMemberInfo())
+                .Select(memberInfo =>
                 {
-                    var (key, value) = tuple;
-
-                    var propertyInfo = (PropertyInfo) value;
-                    var memberAccessExprEntity = Expression.MakeMemberAccess(entityExpr, value);
-                    var memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, value);
+                    var propertyInfo = (PropertyInfo) memberInfo;
+                    var memberAccessExprEntity = Expression.MakeMemberAccess(entityExpr, memberInfo);
+                    var memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, memberInfo);
 
                     var existingAssignmentProfile =
                         profiles.FirstOrDefault(x => x != profile && x.Type == propertyInfo.PropertyType);
 
                     if (existingAssignmentProfile != null)
                     {
-                        var updateFuncExpr = Expression.Call(
-                            Expression.Constant(existingAssignmentProfile),
-                            key.UpdatePropertyMethodName,
-                            new[] {propertyInfo.PropertyType},
-                            memberAccessExprEntity,
-                            memberAccessExprDto
-                        );
+                        var genericUpdatorWithComparer =
+                            UpdatePropertyWithComparerMethodInfo.MakeGenericMethod(propertyInfo.PropertyType);
+                        var profileComparerExpr = Expression.Constant(existingAssignmentProfile.ComparerMethodInfo);
 
-                        return updateFuncExpr;
+                        var updateFuncExpr = Expression.Call(
+                            genericUpdatorWithComparer,
+                            memberAccessExprEntity,
+                            memberAccessExprDto,
+                            profileComparerExpr);
+
+                        return (Expression) updateFuncExpr;
                     }
                     else
                     {
+                        var genericUpdatorWithoutComparer =
+                            UpdatePropertyWithoutComparerMethodInfo.MakeGenericMethod(propertyInfo.PropertyType);
                         var setterMethodInfo = propertyInfo.GetSetMethod();
 
                         if (setterMethodInfo == null)
                         {
-                            throw new Exception($"Setter for member: {value.Name} does not exist");
+                            throw new Exception($"Setter for member: {memberInfo.Name} does not exist");
                         }
 
                         var updateFuncExpr = Expression.Call(
-                            Expression.Constant(key),
-                            key.UpdatePropertyMethodName,
-                            new[] {propertyInfo.PropertyType},
+                            genericUpdatorWithoutComparer,
                             memberAccessExprEntity,
                             memberAccessExprDto
                         );
@@ -119,9 +118,13 @@ namespace EntityUpdater.Utility
         /// <returns></returns>
         public MemberInfo ResolveMemberInfo()
         {
-            return _members.Count == 1
-                ? _members.First()
-                : throw new Exception($"Expression: `{_expr}` is not a valid member expression");
+            switch (_members.Count)
+            {
+                case 1:
+                    return _members.First();
+                default:
+                    throw new Exception($"Expression: `{_expr}` is not a valid member expression");
+            }
         }
 
         /// <inheritdoc />
