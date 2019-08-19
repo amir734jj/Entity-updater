@@ -9,13 +9,13 @@ using EntityUpdater.Utility;
 
 namespace EntityUpdater.Abstracts
 {
-    public abstract class AssignmentProfile<T> : IAssignmentProfile
+    public abstract class EntityProfile<T> : IEntityProfile
     {
         private ImmutableList<Expression<Func<T, object>>> _memberExprs;
 
         private Action<T, T> _resolveAssignmentAction;
 
-        protected AssignmentProfile()
+        protected EntityProfile()
         {
             _memberExprs = ImmutableList<Expression<Func<T, object>>>.Empty;
         }
@@ -25,7 +25,7 @@ namespace EntityUpdater.Abstracts
         /// </summary>
         public virtual string UpdatePropertyMethodName { get; } = nameof(UpdateProperty);
 
-        public void ResolveAssignment(IEnumerable<IAssignmentProfile> profiles, object entity, object dto)
+        public void ResolveAssignment(IEnumerable<IEntityProfile> profiles, object entity, object dto)
         {
             if (_resolveAssignmentAction == null)
             {

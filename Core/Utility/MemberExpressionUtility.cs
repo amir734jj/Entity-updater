@@ -22,8 +22,8 @@ namespace EntityUpdater.Utility
         /// <param name="exprs"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static Action<T, T> GenerateAssignment<T>(IEnumerable<IAssignmentProfile> profiles,
-            IAssignmentProfile profile,
+        public static Action<T, T> GenerateAssignment<T>(IEnumerable<IEntityProfile> profiles,
+            IEntityProfile profile,
             IEnumerable<Expression<Func<T, object>>> exprs)
         {
             var type = typeof(T);

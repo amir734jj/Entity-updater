@@ -8,7 +8,7 @@ using EntityUpdater.Interfaces;
 
 namespace EntityUpdater
 {
-    public class AssignmentUtilityHelper : IAssignmentUtilityHelper
+    internal class EntityMapperHelper : IEntityMapperHelper
     {
         public void Assembly(params string[] names)
         {
@@ -19,63 +19,54 @@ namespace EntityUpdater
 
         public void Assembly(params Assembly[] assemblies)
         {
-            var classMapType = typeof(IAssignmentProfile);
+            var classMapType = typeof(IEntityProfile);
 
             var rslt = assemblies.SelectMany(assembly => assembly.DefinedTypes
                 .Where(x => x.IsClass && !x.IsAbstract && classMapType.IsAssignableFrom(x))
-                .Select(x => x.Instantiate<IAssignmentProfile>()));
-            
+                .Select(x => x.Instantiate<IEntityProfile>()));
+
             Profiles = Profiles.AddRange(rslt);
         }
 
-        public void Profile<T>(T instance) where T : IAssignmentProfile
+        public void Profile<T>(T instance) where T : IEntityProfile
         {
             Profiles = Profiles.Add(instance);
         }
 
-        public void Profile<T>() where T : IAssignmentProfile
+        public void Profile<T>() where T : IEntityProfile
         {
-            Profiles = Profiles.Add(typeof(T).Instantiate<IAssignmentProfile>());
+            Profiles = Profiles.Add(typeof(T).Instantiate<IEntityProfile>());
         }
 
-        public ImmutableList<IAssignmentProfile> Profiles { get; private set; }
+        public ImmutableList<IEntityProfile> Profiles { get; private set; }
 
-        protected AssignmentUtilityHelper()
+        internal EntityMapperHelper()
         {
-            Profiles = ImmutableList<IAssignmentProfile>.Empty;
-        }
-
-        /// <summary>
-        /// Static constructor
-        /// </summary>
-        /// <returns></returns>
-        public static IAssignmentUtilityHelper New()
-        {
-            return new AssignmentUtilityHelper();
+            Profiles = ImmutableList<IEntityProfile>.Empty;
         }
     }
 
     /// <summary>
     /// Assignment utility
     /// </summary>
-    public class AssignmentUtility : IAssignmentUtility
+    public class EntityMapper : IEntityMapper
     {
         private readonly Action<object, object> _updateHandler;
 
-        public static IAssignmentUtility Build(Action<IAssignmentUtilityHelper> option)
+        public static IEntityMapper Build(Action<IEntityMapperHelper> option)
         {
-            var payload = AssignmentUtilityHelper.New();
+            var payload = new EntityMapperHelper();
 
             option(payload);
 
-            return new AssignmentUtility(payload.Profiles);
+            return new EntityMapper(payload.Profiles);
         }
 
         /// <summary>
         /// Load mapper profiles from given list
         /// </summary>
         /// <param name="profiles"></param>
-        private AssignmentUtility(IReadOnlyList<IAssignmentProfile> profiles)
+        private EntityMapper(IReadOnlyList<IEntityProfile> profiles)
         {
             void UpdateHandlerAction(object entity, object dto)
             {

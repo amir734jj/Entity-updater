@@ -1,6 +1,6 @@
 namespace EntityUpdater.Interfaces
 {
-    public interface IAssignmentUtility
+    public interface IEntityMapper
     {
         /// <summary>
         /// Updates entity given dto

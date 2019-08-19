@@ -3,9 +3,9 @@ using EntityUpdater.Abstracts;
 
 namespace Core.Tests.Profiles
 {
-    public class PersonAssignmentProfile : AssignmentProfile<Person>
+    public class PersonEntityProfile : EntityProfile<Person>
     {
-        public PersonAssignmentProfile()
+        public PersonEntityProfile()
         {
             Map(x => x.Id)
                 .Then(x => x.Age)

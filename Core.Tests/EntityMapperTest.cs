@@ -7,16 +7,16 @@ using Xunit;
 
 namespace Core.Tests
 {
-    public class AssignmentUtilityTest
+    public class EntityMapperTest
     {
         private readonly Fixture _fixture;
-        private readonly IAssignmentUtility _assignmentUtility;
+        private readonly IEntityMapper _entityMapper;
 
-        public AssignmentUtilityTest()
+        public EntityMapperTest()
         {
             _fixture = new Fixture();
 
-            _assignmentUtility = AssignmentUtility.Build(_ =>
+            _entityMapper = EntityMapper.Build(_ =>
             {
                 _.Assembly(Assembly.GetExecutingAssembly());
             });
@@ -29,7 +29,7 @@ namespace Core.Tests
             var entity = _fixture.Create<Person>();
             var dto = _fixture.Create<Person>();
 
-            _assignmentUtility.Update(entity, dto);
+            _entityMapper.Update(entity, dto);
 
             // Act
             var rslt = entity.Equals(dto);

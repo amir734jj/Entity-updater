@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace EntityUpdater.Interfaces
 {
-    public interface IAssignmentProfile
+    public interface IEntityProfile
     {
         string UpdatePropertyMethodName { get; }
 
-        void ResolveAssignment(IEnumerable<IAssignmentProfile> profiles, object entity, object dto);
+        void ResolveAssignment(IEnumerable<IEntityProfile> profiles, object entity, object dto);
         
         bool TypeCheck(object instance);
 

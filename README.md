@@ -43,23 +43,23 @@ public class Person
 
 ### Mapper profile:
 ```csharp
-public class PersonAssignmentProfile : AssignmentProfile<Person>
+public class PersonProfile : EntityProfile<Person>
 {
-    public PersonAssignmentProfile()
+    public PersonProfile()
     {
-        Map(x => x.Id);
-        Map(x => x.Age);
-        Map(x => x.Firstname);
-        Map(x => x.Lastname);
-        Map(x => x.IsPressent);
-        Map(x => x.DateOfBirth);
+        Map(x => x.Id)
+            .Then(x => x.Age)
+            .Then(x => x.Firstname)
+            .Then(x => x.Lastname)
+            .Then(x => x.IsPressent)
+            .Then(x => x.DateOfBirth);
     }
 }
 ```
 
 ### Build the utility:
 ```csharp
-var utility = AssignmentUtility.Build(_ => {
+var utility = EntityMapper.Build(_ => {
     _.Assembly(Assembly.GetExecutingAssembly());
 });
 
