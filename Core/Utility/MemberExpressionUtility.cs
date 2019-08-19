@@ -17,11 +17,13 @@ namespace EntityUpdater.Utility
         /// <summary>
         /// Generate assignment function from the provided member
         /// </summary>
+        /// <param name="profiles"></param>
         /// <param name="profile"></param>
         /// <param name="exprs"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        public static Action<T, T> GenerateAssignment<T>(IAssignmentProfile profile,
+        public static Action<T, T> GenerateAssignment<T>(IEnumerable<IAssignmentProfile> profiles,
+            IAssignmentProfile profile,
             IEnumerable<Expression<Func<T, object>>> exprs)
         {
             var type = typeof(T);
@@ -39,26 +41,45 @@ namespace EntityUpdater.Utility
                     var propertyInfo = (PropertyInfo) value;
                     var memberAccessExprEntity = Expression.MakeMemberAccess(entityExpr, value);
                     var memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, value);
-                    var setterMethodInfo = propertyInfo.GetSetMethod();
 
-                    if (setterMethodInfo == null)
+                    var existingAssignmentProfile =
+                        profiles.FirstOrDefault(x => x != profile && x.Type == propertyInfo.PropertyType);
+
+                    if (existingAssignmentProfile != null)
                     {
-                        throw new Exception($"Setter for member: {value.Name} does not exist");
+                        var updateFuncExpr = Expression.Call(
+                            Expression.Constant(existingAssignmentProfile),
+                            key.UpdatePropertyMethodName,
+                            new[] {propertyInfo.PropertyType},
+                            memberAccessExprEntity,
+                            memberAccessExprDto
+                        );
+
+                        return updateFuncExpr;
                     }
+                    else
+                    {
+                        var setterMethodInfo = propertyInfo.GetSetMethod();
 
-                    var updateFuncExpr = Expression.Call(
-                        Expression.Constant(key),
-                        key.UpdatePropertyMethodName,
-                        new[] {propertyInfo.PropertyType},
-                        memberAccessExprEntity,
-                        memberAccessExprDto
-                    );
+                        if (setterMethodInfo == null)
+                        {
+                            throw new Exception($"Setter for member: {value.Name} does not exist");
+                        }
 
-                    var castRsltExpr = Expression.Convert(updateFuncExpr, propertyInfo.PropertyType);
+                        var updateFuncExpr = Expression.Call(
+                            Expression.Constant(key),
+                            key.UpdatePropertyMethodName,
+                            new[] {propertyInfo.PropertyType},
+                            memberAccessExprEntity,
+                            memberAccessExprDto
+                        );
 
-                    var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castRsltExpr);
+                        var castRsltExpr = Expression.Convert(updateFuncExpr, propertyInfo.PropertyType);
 
-                    return assignmentExpr;
+                        var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castRsltExpr);
+
+                        return assignmentExpr;
+                    }
                 });
 
             var body = Expression.Block(assignments);

@@ -8,7 +8,7 @@
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Description>Update Entity from DTO using a simple mapper profile</Description>
         <PackageProjectUrl>https://github.com/amir734jj/Entity-updater</PackageProjectUrl>
-        <Version>1.0.4</Version>
+        <Version>1.0.5</Version>
         <PackageReleaseNotes>Working state.</PackageReleaseNotes>
     </PropertyGroup>
 

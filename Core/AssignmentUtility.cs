@@ -30,15 +30,20 @@ namespace EntityUpdater
         {
             Profiles = Profiles.Add(instance);
         }
-        
+
         public void Profile<T>() where T : IAssignmentProfile
         {
             Profiles = Profiles.Add(typeof(T).Instantiate<IAssignmentProfile>());
         }
-        
-        public ImmutableList<IAssignmentProfile> Profiles { get; private set; } = ImmutableList<IAssignmentProfile>.Empty;
+
+        public ImmutableList<IAssignmentProfile> Profiles { get; private set; }
+
+        public AssignmentUtilityHelper()
+        {
+            Profiles = ImmutableList<IAssignmentProfile>.Empty;
+        }
     }
-    
+
     /// <summary>
     /// Assignment utility
     /// </summary>
@@ -49,9 +54,9 @@ namespace EntityUpdater
         public static IAssignmentUtility Build(Action<AssignmentUtilityHelper> option)
         {
             var payload = new AssignmentUtilityHelper();
-            
+
             option(payload);
-            
+
             return new AssignmentUtility(payload.Profiles);
         }
 
@@ -61,10 +66,13 @@ namespace EntityUpdater
         /// <param name="profiles"></param>
         private AssignmentUtility(IReadOnlyList<IAssignmentProfile> profiles)
         {
-            void UpdateHandlerAction(object entity, object dto) =>
-                (profiles.FirstOrDefault(y => y.TypeCheck(entity)) != null
-                    ? profiles.FirstOrDefault(y => y.TypeCheck(entity))
-                    : throw new Exception("Failed to find a matching profile"))?.ResolveAssignment(entity, dto);
+            void UpdateHandlerAction(object entity, object dto)
+            {
+                var mapper = profiles.FirstOrDefault(y => y.TypeCheck(entity)) ??
+                             throw new Exception("Failed to find a matching profile");
+
+                mapper.ResolveAssignment(profiles, entity, dto);
+            }
 
             _updateHandler = UpdateHandlerAction;
         }

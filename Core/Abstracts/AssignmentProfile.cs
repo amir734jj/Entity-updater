@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq.Expressions;
 using EntityUpdater.Interfaces;
@@ -18,11 +19,11 @@ namespace EntityUpdater.Abstracts
         /// </summary>
         public string UpdatePropertyMethodName { get; } = nameof(UpdateProperty);
 
-        public void ResolveAssignment(object entity, object dto)
+        public void ResolveAssignment(IReadOnlyList<IAssignmentProfile> profiles, object entity, object dto)
         {
             if (_resolveAssignmentAction == null)
             {
-                _resolveAssignmentAction = MemberExpressionUtility.GenerateAssignment(this, _memberExprs);
+                _resolveAssignmentAction = MemberExpressionUtility.GenerateAssignment(profiles, this, _memberExprs);
             }
 
             _resolveAssignmentAction((T) entity, (T) dto);
@@ -43,7 +44,9 @@ namespace EntityUpdater.Abstracts
                     return false;
             }
         }
-        
+
+        public Type Type { get; } = typeof(T);
+
         /// <summary>
         /// Map property
         /// </summary>
@@ -54,7 +57,7 @@ namespace EntityUpdater.Abstracts
 
             return new MapperHelper<T>(Map);
         }
-        
+
         public virtual object UpdateProperty<T>(T entityPropVal, T dtoPropVal)
         {
             switch (dtoPropVal)
