@@ -25,7 +25,7 @@ namespace EntityUpdater.Abstracts
         /// </summary>
         public virtual string UpdatePropertyMethodName { get; } = nameof(UpdateProperty);
 
-        public void ResolveAssignment(IReadOnlyList<IAssignmentProfile> profiles, object entity, object dto)
+        public void ResolveAssignment(IEnumerable<IAssignmentProfile> profiles, object entity, object dto)
         {
             if (_resolveAssignmentAction == null)
             {
@@ -64,7 +64,7 @@ namespace EntityUpdater.Abstracts
             return new MapperHelper<T>(Map);
         }
 
-        public virtual object UpdateProperty<T>(T entityPropVal, T dtoPropVal)
+        public virtual object UpdateProperty<TPropertyValue>(TPropertyValue entityPropVal, TPropertyValue dtoPropVal)
         {
             switch (dtoPropVal)
             {
@@ -108,7 +108,7 @@ namespace EntityUpdater.Abstracts
                     }
 
                     return entityPropVal;
-                case object x when x == (object) default(T):
+                case object x when x == (object) default(TPropertyValue):
                     return dtoPropVal;
                 default:
                     return dtoPropVal;

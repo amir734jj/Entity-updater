@@ -21,9 +21,11 @@ namespace EntityUpdater
         {
             var classMapType = typeof(IAssignmentProfile);
 
-            Profiles = Profiles.AddRange(assemblies.SelectMany(assembly => assembly.DefinedTypes
+            var rslt = assemblies.SelectMany(assembly => assembly.DefinedTypes
                 .Where(x => x.IsClass && !x.IsAbstract && classMapType.IsAssignableFrom(x))
-                .Select(x => x.Instantiate<IAssignmentProfile>())));
+                .Select(x => x.Instantiate<IAssignmentProfile>()));
+            
+            Profiles = Profiles.AddRange(rslt);
         }
 
         public void Profile<T>(T instance) where T : IAssignmentProfile
@@ -38,9 +40,18 @@ namespace EntityUpdater
 
         public ImmutableList<IAssignmentProfile> Profiles { get; private set; }
 
-        public AssignmentUtilityHelper()
+        protected AssignmentUtilityHelper()
         {
             Profiles = ImmutableList<IAssignmentProfile>.Empty;
+        }
+
+        /// <summary>
+        /// Static constructor
+        /// </summary>
+        /// <returns></returns>
+        public static IAssignmentUtilityHelper New()
+        {
+            return new AssignmentUtilityHelper();
         }
     }
 
@@ -51,9 +62,9 @@ namespace EntityUpdater
     {
         private readonly Action<object, object> _updateHandler;
 
-        public static IAssignmentUtility Build(Action<AssignmentUtilityHelper> option)
+        public static IAssignmentUtility Build(Action<IAssignmentUtilityHelper> option)
         {
-            var payload = new AssignmentUtilityHelper();
+            var payload = AssignmentUtilityHelper.New();
 
             option(payload);
 

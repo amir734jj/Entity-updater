@@ -7,12 +7,13 @@ namespace EntityUpdater.Interfaces
     {
         string UpdatePropertyMethodName { get; }
 
-        void ResolveAssignment(IReadOnlyList<IAssignmentProfile> profiles, object entity, object dto);
+        void ResolveAssignment(IEnumerable<IAssignmentProfile> profiles, object entity, object dto);
         
         bool TypeCheck(object instance);
 
         Type Type { get; }
         
-        object UpdateProperty<T>(T entityPropVal, T dtoPropVal);
+        // ReSharper disable once UnusedMemberInSuper.Global
+        object UpdateProperty<TPropertyValue>(TPropertyValue entityPropVal, TPropertyValue dtoPropVal);
     }
 }
