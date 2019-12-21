@@ -21,11 +21,11 @@ namespace EntityUpdater
         {
             var classMapType = typeof(IEntityProfile);
 
-            var rslt = assemblies.SelectMany(assembly => assembly.DefinedTypes
+            var result = assemblies.SelectMany(assembly => assembly.DefinedTypes
                 .Where(x => x.IsClass && !x.IsAbstract && classMapType.IsAssignableFrom(x))
                 .Select(x => x.Instantiate<IEntityProfile>()));
 
-            Profiles = Profiles.AddRange(rslt);
+            Profiles = Profiles.AddRange(result);
         }
 
         public void Profile<T>(T instance) where T : IEntityProfile

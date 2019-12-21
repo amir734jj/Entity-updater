@@ -14,6 +14,6 @@ namespace Core.Tests.Interfaces
         
         DateTime DateOfBirth { get; set; }
         
-        bool IsPressent { get; set; }
+        bool IsPresent { get; set; }
     }
 }

@@ -10,20 +10,20 @@ namespace EntityUpdater.Abstracts
 {
     public abstract class EntityProfile<T> : IEntityProfile
     {
-        private ImmutableList<Expression<Func<T, object>>> _memberExprs;
+        private ImmutableList<Expression<Func<T, object>>> _memberExpressions;
 
         private Action<T, T> _resolveAssignmentAction;
 
         protected EntityProfile()
         {
-            _memberExprs = ImmutableList<Expression<Func<T, object>>>.Empty;
+            _memberExpressions = ImmutableList<Expression<Func<T, object>>>.Empty;
         }
 
         public void ResolveAssignment(IEnumerable<IEntityProfile> profiles, object entity, object dto)
         {
             if (_resolveAssignmentAction == null)
             {
-                _resolveAssignmentAction = MemberExpressionUtility.GenerateAssignment(profiles, this, _memberExprs);
+                _resolveAssignmentAction = MemberExpressionUtility.GenerateAssignment(profiles, this, _memberExpressions);
             }
 
             _resolveAssignmentAction((T) entity, (T) dto);
@@ -36,13 +36,11 @@ namespace EntityUpdater.Abstracts
         /// <returns></returns>
         public bool TypeCheck(object instance)
         {
-            switch (instance)
+            return instance switch
             {
-                case T _:
-                    return true;
-                default:
-                    return false;
-            }
+                T _ => true,
+                _ => false
+            };
         }
 
         public Type Type { get; } = typeof(T);
@@ -52,10 +50,10 @@ namespace EntityUpdater.Abstracts
         /// <summary>
         /// Map property
         /// </summary>
-        /// <param name="exprs"></param>
-        protected MapperHelper<T> Map(params Expression<Func<T, object>>[] exprs)
+        /// <param name="expressions"></param>
+        protected MapperHelper<T> Map(params Expression<Func<T, object>>[] expressions)
         {
-            _memberExprs = _memberExprs.AddRange(exprs);
+            _memberExpressions = _memberExpressions.AddRange(expressions);
 
             return new MapperHelper<T>(Map, comparerMethodInfo => ComparerMethodInfo = comparerMethodInfo);
         }
@@ -74,9 +72,9 @@ namespace EntityUpdater.Abstracts
             _comparisonDef = comparisonDef;
         }
 
-        public MapperHelper<T> Then(params Expression<Func<T, object>>[] exprs)
+        public MapperHelper<T> Then(params Expression<Func<T, object>>[] expressions)
         {
-            return _propertyDef(exprs);
+            return _propertyDef(expressions);
         }
 
         public void Compare(Func<T, T, bool> comparison)

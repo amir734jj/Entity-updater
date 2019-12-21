@@ -26,21 +26,15 @@ namespace EntityUpdater.Utility
             {
                 case List<TPropertyValue> dtoPropValList when entityPropVal is List<TPropertyValue> entityPropValList:
                     // Apply addition
-                    foreach (var dtoPropValListItem in dtoPropValList)
+                    foreach (var dtoPropValListItem in dtoPropValList.Where(dtoPropValListItem => !entityPropValList.Any(x => comparer(x, dtoPropValListItem))))
                     {
-                        if (!entityPropValList.Any(x => comparer(x, dtoPropValListItem)))
-                        {
-                            entityPropValList.Add(dtoPropValListItem);
-                        }
+                        entityPropValList.Add(dtoPropValListItem);
                     }
 
                     // Apply deletion
-                    foreach (var entityPropValListItem in entityPropValList)
+                    foreach (var entityPropValListItem in entityPropValList.Where(entityPropValListItem => !dtoPropValList.Any(x => comparer(x, entityPropValListItem))))
                     {
-                        if (!dtoPropValList.Any(x => comparer(x, entityPropValListItem)))
-                        {
-                            entityPropValList.Remove(entityPropValListItem);
-                        }
+                        entityPropValList.Remove(entityPropValListItem);
                     }
 
                     return entityPropVal;
@@ -67,21 +61,15 @@ namespace EntityUpdater.Utility
                     return entityPropVal;
                 case IDictionary dtoPropValDict when entityPropVal is IDictionary entityPropValDict:
                     // Apply addition
-                    foreach (DictionaryEntry dtoPropValDictEntry in dtoPropValDict)
+                    foreach (var dtoPropValDictEntry in dtoPropValDict.Cast<DictionaryEntry>().Where(dtoPropValDictEntry => !entityPropValDict.Contains(dtoPropValDictEntry.Key)))
                     {
-                        if (!entityPropValDict.Contains(dtoPropValDictEntry.Key))
-                        {
-                            entityPropValDict[dtoPropValDictEntry.Key] = dtoPropValDictEntry.Value;
-                        }
+                        entityPropValDict[dtoPropValDictEntry.Key] = dtoPropValDictEntry.Value;
                     }
 
                     // Apply deletion
-                    foreach (DictionaryEntry entityPropValDictEntry in entityPropValDict)
+                    foreach (var entityPropValDictEntry in entityPropValDict.Cast<DictionaryEntry>().Where(entityPropValDictEntry => !dtoPropValDict.Contains(entityPropValDictEntry.Key)))
                     {
-                        if (!dtoPropValDict.Contains(entityPropValDictEntry.Key))
-                        {
-                            entityPropValDict.Remove(entityPropValDictEntry.Key);
-                        }
+                        entityPropValDict.Remove(entityPropValDictEntry.Key);
                     }
 
                     return entityPropVal;
@@ -97,7 +85,7 @@ namespace EntityUpdater.Utility
         public static TPropertyValue UpdatePropertyWithoutComparer<TPropertyValue>(TPropertyValue entityPropVal,
             TPropertyValue dtoPropVal)
         {
-            bool Comparer(TPropertyValue x, TPropertyValue y) => x == null && y == null || x != null && x.Equals(y);
+            static bool Comparer(TPropertyValue x, TPropertyValue y) => x == null && y == null || x != null && x.Equals(y);
 
             return UpdatePropertyWithComparer(entityPropVal, dtoPropVal, Comparer);
         }

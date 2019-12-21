@@ -20,17 +20,17 @@ namespace EntityUpdater.Utility
         /// </summary>
         /// <param name="profiles"></param>
         /// <param name="profile"></param>
-        /// <param name="exprs"></param>
+        /// <param name="expressions"></param>
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         public static Action<T, T> GenerateAssignment<T>(IEnumerable<IEntityProfile> profiles,
             IEntityProfile profile,
-            IEnumerable<Expression<Func<T, object>>> exprs)
+            IEnumerable<Expression<Func<T, object>>> expressions)
         {
             var entityExpr = Expression.Parameter(profile.Type);
             var dtoExpr = Expression.Parameter(profile.Type);
 
-            var assignments = exprs
+            var assignments = expressions
                 .DistinctBy(x => x)
                 .Select(x => new MemberExpressionVisitor(x).ResolveMemberInfo())
                 .Select(memberInfo =>
@@ -44,12 +44,12 @@ namespace EntityUpdater.Utility
 
                     if (existingAssignmentProfile != null)
                     {
-                        var genericUpdatorWithComparer =
+                        var genericUpdaterWithComparer =
                             UpdatePropertyWithComparerMethodInfo.MakeGenericMethod(propertyInfo.PropertyType);
                         var profileComparerExpr = Expression.Constant(existingAssignmentProfile.ComparerMethodInfo);
 
                         var updateFuncExpr = Expression.Call(
-                            genericUpdatorWithComparer,
+                            genericUpdaterWithComparer,
                             memberAccessExprEntity,
                             memberAccessExprDto,
                             profileComparerExpr);
@@ -58,7 +58,7 @@ namespace EntityUpdater.Utility
                     }
                     else
                     {
-                        var genericUpdatorWithoutComparer =
+                        var genericUpdaterWithoutComparer =
                             UpdatePropertyWithoutComparerMethodInfo.MakeGenericMethod(propertyInfo.PropertyType);
                         var setterMethodInfo = propertyInfo.GetSetMethod();
 
@@ -68,14 +68,14 @@ namespace EntityUpdater.Utility
                         }
 
                         var updateFuncExpr = Expression.Call(
-                            genericUpdatorWithoutComparer,
+                            genericUpdaterWithoutComparer,
                             memberAccessExprEntity,
                             memberAccessExprDto
                         );
 
-                        var castRsltExpr = Expression.Convert(updateFuncExpr, propertyInfo.PropertyType);
+                        var castResultExpression = Expression.Convert(updateFuncExpr, propertyInfo.PropertyType);
 
-                        var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castRsltExpr);
+                        var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castResultExpression);
 
                         return assignmentExpr;
                     }
@@ -118,13 +118,11 @@ namespace EntityUpdater.Utility
         /// <returns></returns>
         public MemberInfo ResolveMemberInfo()
         {
-            switch (_members.Count)
+            return _members.Count switch
             {
-                case 1:
-                    return _members.First();
-                default:
-                    throw new Exception($"Expression: `{_expr}` is not a valid member expression");
-            }
+                1 => _members.First(),
+                _ => throw new Exception($"Expression: `{_expr}` is not a valid member expression")
+            };
         }
 
         /// <inheritdoc />

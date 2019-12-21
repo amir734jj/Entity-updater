@@ -15,13 +15,15 @@ namespace Core.Tests.Models
 
         public DateTime DateOfBirth { get; set; }
 
-        public bool IsPressent { get; set; }
+        public bool IsPresent { get; set; }
 
         public bool Equals(Person other)
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return Id.Equals(other.Id) && string.Equals(Firstname, other.Firstname) && string.Equals(Lastname, other.Lastname) && Age == other.Age && DateOfBirth.Equals(other.DateOfBirth) && IsPressent == other.IsPressent;
+            return Id.Equals(other.Id) && string.Equals(Firstname, other.Firstname) &&
+                   string.Equals(Lastname, other.Lastname) && Age == other.Age &&
+                   DateOfBirth.Equals(other.DateOfBirth) && IsPresent == other.IsPresent;
         }
 
         public override bool Equals(object obj)
@@ -41,7 +43,7 @@ namespace Core.Tests.Models
                 hashCode = (hashCode * 397) ^ (Lastname != null ? Lastname.GetHashCode() : 0);
                 hashCode = (hashCode * 397) ^ Age;
                 hashCode = (hashCode * 397) ^ DateOfBirth.GetHashCode();
-                hashCode = (hashCode * 397) ^ IsPressent.GetHashCode();
+                hashCode = (hashCode * 397) ^ IsPresent.GetHashCode();
                 return hashCode;
             }
         }
