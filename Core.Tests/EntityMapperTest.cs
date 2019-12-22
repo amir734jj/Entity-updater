@@ -9,7 +9,7 @@ namespace Core.Tests
 {
     public class EntityMapperTest
     {
-        private readonly Fixture _fixture;
+        private readonly IFixture _fixture;
         private readonly IEntityMapper _entityMapper;
 
         public EntityMapperTest()
@@ -17,25 +17,26 @@ namespace Core.Tests
             _fixture = new Fixture();
 
             _entityMapper = EntityMapper.Build(_ =>
-            {
-                _.Assembly(Assembly.GetExecutingAssembly());
-            });
+                _.Assembly(Assembly.GetExecutingAssembly()));
+
+            _fixture.Customize<DummyModel>(x => x.With(y => y.CircularModel,
+                () => _fixture.Build<CircularModel>().Without(y => y.CircularModelRef).Create()));
         }
-        
+
         [Fact]
         public void Test__Mapper()
         {
             // Arrange
-            var entity = _fixture.Create<Person>();
-            var dto = _fixture.Create<Person>();
+            var entity = _fixture.Create<DummyModel>();
+            var dto = _fixture.Create<DummyModel>();
 
             _entityMapper.Update(entity, dto);
 
             // Act
-            var rslt = entity.Equals(dto);
+            var result = entity.Equals(dto);
 
             // Assert
-            Assert.True(rslt);
+            Assert.True(result);
         }
     }
 }

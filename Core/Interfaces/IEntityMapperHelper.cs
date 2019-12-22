@@ -7,12 +7,12 @@ namespace EntityUpdater.Interfaces
     {
         ImmutableList<IEntityProfile> Profiles { get; }
         
-        void Assembly(params string[] names);
+        IEntityMapperHelper Assembly(params string[] names);
 
-        void Assembly(params Assembly[] assemblies);
+        IEntityMapperHelper Assembly(params Assembly[] assemblies);
 
-        void Profile<T>(T instance) where T : IEntityProfile;
+        IEntityMapperHelper Profile<T>(T instance) where T : IEntityProfile;
 
-        void Profile<T>() where T : IEntityProfile;
+        IEntityMapperHelper Profile<T>() where T : IEntityProfile;
     }
 }

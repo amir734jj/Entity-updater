@@ -5,19 +5,22 @@ using System.Linq;
 using System.Reflection;
 using EntityUpdater.Extensions;
 using EntityUpdater.Interfaces;
+using EntityUpdater.Logic;
 
 namespace EntityUpdater
 {
     internal class EntityMapperHelper : IEntityMapperHelper
     {
-        public void Assembly(params string[] names)
+        public IEntityMapperHelper Assembly(params string[] names)
         {
             var assemblies = names.Select(System.Reflection.Assembly.Load).ToArray();
 
             Assembly(assemblies);
+            
+            return this;
         }
 
-        public void Assembly(params Assembly[] assemblies)
+        public IEntityMapperHelper Assembly(params Assembly[] assemblies)
         {
             var classMapType = typeof(IEntityProfile);
 
@@ -26,16 +29,22 @@ namespace EntityUpdater
                 .Select(x => x.Instantiate<IEntityProfile>()));
 
             Profiles = Profiles.AddRange(result);
+            
+            return this;
         }
 
-        public void Profile<T>(T instance) where T : IEntityProfile
+        public IEntityMapperHelper Profile<T>(T instance) where T : IEntityProfile
         {
             Profiles = Profiles.Add(instance);
+
+            return this;
         }
 
-        public void Profile<T>() where T : IEntityProfile
+        public IEntityMapperHelper Profile<T>() where T : IEntityProfile
         {
             Profiles = Profiles.Add(typeof(T).Instantiate<IEntityProfile>());
+
+            return this;
         }
 
         public ImmutableList<IEntityProfile> Profiles { get; private set; }
@@ -47,11 +56,11 @@ namespace EntityUpdater
     }
 
     /// <summary>
-    /// Assignment utility
+    ///     Assignment utility
     /// </summary>
     public class EntityMapper : IEntityMapper
     {
-        private readonly Action<object, object> _updateHandler;
+        private readonly Action<Type, object, object> _updateHandler;
 
         public static IEntityMapper Build(Action<IEntityMapperHelper> option)
         {
@@ -63,25 +72,25 @@ namespace EntityUpdater
         }
 
         /// <summary>
-        /// Load mapper profiles from given list
+        ///     Load mapper profiles from given list
         /// </summary>
         /// <param name="profiles"></param>
-        private EntityMapper(IReadOnlyList<IEntityProfile> profiles)
+        private EntityMapper(IReadOnlyCollection<IEntityProfile> profiles)
         {
-            void UpdateHandlerAction(object entity, object dto)
+            var entityMapperLogic = new EntityMapperLogic(profiles);
+
+            _updateHandler = (type, entity, dto) =>
             {
-                var mapper = profiles.FirstOrDefault(y => y.TypeCheck(entity)) ??
-                             throw new Exception("Failed to find a matching profile");
+                var profile = profiles.FirstOrDefault(y => y.TypeCheck(entity)) ??
+                              throw new Exception($"Failed to find a matching profile for type {type.Name}");
 
-                // mapper.ResolveAssignment(profiles, entity, dto);
-            }
-
-            _updateHandler = UpdateHandlerAction;
+                entityMapperLogic.ResolveUpdate(profile)(entity, dto);
+            };
         }
 
         public void Update<T>(T entity, T dto)
         {
-            _updateHandler(entity, dto);
+            _updateHandler(typeof(T), entity, dto);
         }
     }
 }

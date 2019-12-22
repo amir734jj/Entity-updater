@@ -15,6 +15,11 @@ namespace EntityUpdater.Logic
 
         private readonly IDictionary<IEntityProfile, Action<object, object>> _updateTable;
 
+        public Action<object, object> ResolveUpdate(IEntityProfile profile)
+        {
+            return BuildUpdate(profile, request => _updateTable[request]);
+        }
+        
         /// <summary>
         ///     Recursive function to build update for a profile
         /// </summary>
@@ -42,46 +47,35 @@ namespace EntityUpdater.Logic
                         var memberAccessExprEntity = Expression.MakeMemberAccess(entityExpr, propertyInfo);
                         var memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, propertyInfo);
 
-                        var existingAssignmentProfile = _profiles.FirstOrDefault(x => x != profile && x.Type == propertyInfo.PropertyType);
+                        var setterMethodInfo = propertyInfo.GetSetMethod();
 
-                        if (existingAssignmentProfile != null)
-                        {
-                            var genericUpdaterWithComparer =
-                                UpdatePropertyWithComparerMethodInfo.MakeGenericMethod(propertyInfo.PropertyType);
-                            var profileComparerExpr = Expression.Constant(existingAssignmentProfile.ComparerMethodInfo);
+                        /*
+                        var updateFuncExpr = Expression.Call(
+                            genericUpdaterWithoutComparer,
+                            memberAccessExprEntity,
+                            memberAccessExprDto
+                        );
+                        */
 
-                            var updateFuncExpr = Expression.Call(
-                                genericUpdaterWithComparer,
-                                memberAccessExprEntity,
-                                memberAccessExprDto,
-                                profileComparerExpr);
+                        // Type-cast the result
+                        var castResultExpression = Expression.Convert(memberAccessExprDto, propertyInfo.PropertyType);
 
-                            return (Expression) updateFuncExpr;
-                        }
-                        else
-                        {
-                            var genericUpdaterWithoutComparer =
-                                UpdatePropertyWithoutComparerMethodInfo.MakeGenericMethod(propertyInfo.PropertyType);
-                            var setterMethodInfo = propertyInfo.GetSetMethod();
+                        // Call setter of entity
+                        var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castResultExpression);
 
-                            if (setterMethodInfo == null)
-                            {
-                                throw new Exception($"Setter for member: {memberInfo.Name} does not exist");
-                            }
-
-                            var updateFuncExpr = Expression.Call(
-                                genericUpdaterWithoutComparer,
-                                memberAccessExprEntity,
-                                memberAccessExprDto
-                            );
-
-                            var castResultExpression = Expression.Convert(updateFuncExpr, propertyInfo.PropertyType);
-
-                            var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castResultExpression);
-
-                            return assignmentExpr;
-                        }
+                        // Return the assignment
+                        return assignmentExpr;
                     });
+
+                // Build lambda expression
+                var lambda =
+                    Expression.Lambda<Action<object, object>>(Expression.Block(assignments), entityExpr, dtoExpr);
+
+                // Store the function just compiled
+                _updateTable[profile] = lambda.Compile();
+
+                // Run the build action
+                _updateTable[profile](o1, o2);
             };
         }
     }

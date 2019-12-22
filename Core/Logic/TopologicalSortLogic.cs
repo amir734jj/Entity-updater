@@ -21,7 +21,7 @@ namespace EntityUpdater.Logic
         ///     Build graph from list 
         /// </summary>
         /// <returns></returns>
-        private static UndirectedGraph<Vertex, Edge> BuildGraph(IReadOnlyCollection<IEntityProfile> profiles)
+        private static IUndirectedGraph<Vertex, Edge> BuildGraph(IReadOnlyCollection<IEntityProfile> profiles)
         {
             var graph = new UndirectedGraph<Vertex, Edge>();
             
@@ -32,9 +32,9 @@ namespace EntityUpdater.Logic
 
             foreach (var profile in profiles)
             {
-                foreach (var (_, dependentProfile) in profiles
-                    .Select(x => (Member: x, Profile: profiles.FirstOrDefault(y => x.Type == y.Type)))
-                    .Where(x => x.Profile != null))
+                foreach (var dependentProfile in profile.Members
+                    .Select(member => profiles.FirstOrDefault(dependentProfile => dependentProfile.Type == member.PropertyType))
+                    .Where(x => x != null))
                 {
                     graph.AddEdge((profile.AsVertex(), dependentProfile.AsVertex()).AsEdge());
                 }
