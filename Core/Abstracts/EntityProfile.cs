@@ -1,85 +1,104 @@
 using System;
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Linq.Expressions;
 using System.Reflection;
+using EntityUpdater.Extensions;
 using EntityUpdater.Interfaces;
-using EntityUpdater.Utility;
 
 namespace EntityUpdater.Abstracts
 {
-    public abstract class EntityProfile<T> : IEntityProfile
+    public abstract class EntityProfile<T> : IMapUCompare<T>, IEntityProfile
     {
-        private ImmutableList<Expression<Func<T, object>>> _memberExpressions;
-
-        private Action<T, T> _resolveAssignmentAction;
-
-        protected EntityProfile()
-        {
-            _memberExpressions = ImmutableList<Expression<Func<T, object>>>.Empty;
-        }
-
-        public void ResolveAssignment(IEnumerable<IEntityProfile> profiles, object entity, object dto)
-        {
-            if (_resolveAssignmentAction == null)
-            {
-                _resolveAssignmentAction = MemberExpressionUtility.GenerateAssignment(profiles, this, _memberExpressions);
-            }
-
-            _resolveAssignmentAction((T) entity, (T) dto);
-        }
+        /// <summary>
+        ///     Returns all mapped property infos
+        /// </summary>
+        public IList<PropertyInfo> Members { get; set; } = new List<PropertyInfo>();
 
         /// <summary>
-        /// Type check if object is instance of type T
+        ///     Comparer function
+        /// </summary>
+        public Func<object, object, bool> Compare { get; private set; } = (o1, o2) => o1 switch
+        {
+            T t1 when o2 is T t2 => ReferenceEquals(t1, t2),
+            _ => false
+        };
+
+        /// <summary>
+        ///     Type check if object is instance of type T
         /// </summary>
         /// <param name="instance"></param>
         /// <returns></returns>
-        public bool TypeCheck(object instance)
+        public bool TypeCheck(object instance) => instance switch
         {
-            return instance switch
-            {
-                T _ => true,
-                _ => false
-            };
-        }
+            T _ => true,
+            _ => false
+        };
 
         public Type Type { get; } = typeof(T);
 
-        public MethodInfo ComparerMethodInfo { get; private set; }
+        /// <summary>
+        ///     Returns MethodInfo of a comparer
+        /// </summary>
+        public MethodInfo ComparerMethodInfo => Compare.Method;
 
         /// <summary>
-        /// Map property
+        ///     Override the comparer
         /// </summary>
-        /// <param name="expressions"></param>
-        protected MapperHelper<T> Map(params Expression<Func<T, object>>[] expressions)
+        /// <param name="comparer"></param>
+        public void Comparison(Func<T, T, bool> comparer) => Compare = (o1, o2) => o1 switch
         {
-            _memberExpressions = _memberExpressions.AddRange(expressions);
+            T t1 when o2 is T t2 => comparer(t1, t2),
+            _ => false
+        };
 
-            return new MapperHelper<T>(Map, comparerMethodInfo => ComparerMethodInfo = comparerMethodInfo);
+        /// <summary>
+        ///     Validate PropertyInfo has getter and setter defined
+        /// </summary>
+        /// <param name="propertyInfo"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        private static PropertyInfo ValidateProperty(PropertyInfo propertyInfo)
+        {
+            if (propertyInfo.GetMethod == null)
+            {
+                throw new Exception($"Missing get method for property: {propertyInfo.Name}");
+            }
+            
+            if (propertyInfo.SetMethod == null)
+            {
+                throw new Exception($"Missing set method for property: {propertyInfo.Name}");
+            }
+
+            return propertyInfo;
         }
-    }
 
-    public class MapperHelper<T>
-    {
-        private readonly Func<Expression<Func<T, object>>[], MapperHelper<T>> _propertyDef;
-
-        private readonly Action<MethodInfo> _comparisonDef;
-
-        public MapperHelper(Func<Expression<Func<T, object>>[], MapperHelper<T>> propertyDef,
-            Action<MethodInfo> comparisonDef)
+        public IMapUCompare<T> MapReference<TProperty>(Expression<Func<T, TProperty>> expression) where TProperty : new()
         {
-            _propertyDef = propertyDef;
-            _comparisonDef = comparisonDef;
+            return Map(expression);
         }
 
-        public MapperHelper<T> Then(params Expression<Func<T, object>>[] expressions)
+        public IMapUCompare<T> MapPrimitive<TProperty>(Expression<Func<T, TProperty>> expression) where TProperty : struct
         {
-            return _propertyDef(expressions);
+            return Map(expression);
         }
 
-        public void Compare(Func<T, T, bool> comparison)
+        public IMapUCompare<T> MapRestrict<TProperty>(Expression<Func<T, TProperty>> expression) where TProperty : IComparable, IConvertible, IEquatable<TProperty>
         {
-            _comparisonDef(comparison.Method);
+            return Map(expression);
+        }
+
+
+        /// <summary>
+        ///     Map utility helper
+        /// </summary>
+        /// <param name="expression"></param>
+        /// <typeparam name="TProperty"></typeparam>
+        /// <returns></returns>
+        private IMapUCompare<T> Map<TProperty>(Expression<Func<T, TProperty>> expression)
+        {
+            Members.Add(ValidateProperty(expression.ResolvePropertyInfo()));
+
+            return this;
         }
     }
 }

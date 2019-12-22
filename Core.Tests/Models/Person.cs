@@ -3,8 +3,15 @@ using Core.Tests.Interfaces;
 
 namespace Core.Tests.Models
 {
+    public class Foo
+    {
+        public string F1 { get; set; }
+    }
+    
     public class Person : IPerson, IEquatable<Person>
     {
+        public Foo Foo { get; set; }
+        
         public Guid Id { get; set; }
 
         public string Firstname { get; set; }

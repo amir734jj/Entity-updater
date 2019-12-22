@@ -73,7 +73,7 @@ namespace EntityUpdater
                 var mapper = profiles.FirstOrDefault(y => y.TypeCheck(entity)) ??
                              throw new Exception("Failed to find a matching profile");
 
-                mapper.ResolveAssignment(profiles, entity, dto);
+                // mapper.ResolveAssignment(profiles, entity, dto);
             }
 
             _updateHandler = UpdateHandlerAction;

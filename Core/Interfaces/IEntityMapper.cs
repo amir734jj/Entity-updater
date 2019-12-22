@@ -3,7 +3,7 @@ namespace EntityUpdater.Interfaces
     public interface IEntityMapper
     {
         /// <summary>
-        /// Updates entity given dto
+        ///     Updates entity given dto
         /// </summary>
         /// <param name="entity"></param>
         /// <param name="dto"></param>

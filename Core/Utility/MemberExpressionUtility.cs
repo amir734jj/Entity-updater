@@ -31,8 +31,8 @@ namespace EntityUpdater.Utility
             var dtoExpr = Expression.Parameter(profile.Type);
 
             var assignments = expressions
-                .DistinctBy(x => x)
-                .Select(x => new MemberExpressionVisitor(x).ResolveMemberInfo())
+                .Distinct()
+                .Select(x => new MemberExpressionLogic.MemberExpressionVisitor(x).ResolveMemberInfo())
                 .Select(memberInfo =>
                 {
                     var propertyInfo = (PropertyInfo) memberInfo;
@@ -86,56 +86,6 @@ namespace EntityUpdater.Utility
             var lambda = Expression.Lambda<Action<T, T>>(body, entityExpr, dtoExpr);
 
             return lambda.Compile();
-        }
-    }
-
-    /// <inheritdoc />
-    /// <summary>
-    /// Expression visitor to resolve MemberInfo from an Expression
-    /// </summary>
-    public sealed class MemberExpressionVisitor : ExpressionVisitor
-    {
-        private ImmutableList<MemberInfo> _members;
-
-        private readonly Expression _expr;
-
-        /// <inheritdoc />
-        /// <summary>
-        /// Constructor
-        /// </summary>
-        /// <param name="expr"></param>
-        public MemberExpressionVisitor(Expression expr)
-        {
-            _expr = expr;
-            _members = ImmutableList.Create<MemberInfo>();
-
-            Visit(expr);
-        }
-
-        /// <summary>
-        /// Return the MemberInfo, throw an exception if count of MemberInfos is not equal to one
-        /// </summary>
-        /// <returns></returns>
-        public MemberInfo ResolveMemberInfo()
-        {
-            return _members.Count switch
-            {
-                1 => _members.First(),
-                _ => throw new Exception($"Expression: `{_expr}` is not a valid member expression")
-            };
-        }
-
-        /// <inheritdoc />
-        /// <summary>
-        /// Add the MemberInfo to the list (there should be a single MemberInfo at the end)
-        /// </summary>
-        /// <param name="node"></param>
-        /// <returns></returns>
-        protected override Expression VisitMember(MemberExpression node)
-        {
-            _members = _members.Add(node.Member);
-
-            return base.VisitMember(node);
         }
     }
 }
