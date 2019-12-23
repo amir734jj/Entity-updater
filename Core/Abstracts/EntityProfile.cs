@@ -10,9 +10,32 @@ namespace EntityUpdater.Abstracts
     public abstract class EntityProfile<T> : IMapUCompare<T>, IEntityProfile
     {
         /// <summary>
+        ///     TypeSafe update builder
+        /// </summary>
+        /// <param name="body"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        public Action<object, object> TypeSafeUpdate(Expression body, params ParameterExpression[] parameters)
+        {
+            var lambda = Expression.Lambda<Action<T, T>>(body, parameters).Compile();
+
+            void Action(object o1, object o2)
+            {
+                switch (o1)
+                {
+                    case T t1 when o2 is T t2:
+                        lambda(t1, t2);
+                        break;
+                }
+            }
+
+            return Action;
+        }
+        
+        /// <summary>
         ///     Returns all mapped property infos
         /// </summary>
-        public IList<PropertyInfo> Members { get; set; } = new List<PropertyInfo>();
+        public IList<PropertyInfo> Members { get; } = new List<PropertyInfo>();
 
         /// <summary>
         ///     Comparer function

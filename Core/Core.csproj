@@ -12,8 +12,4 @@
         <PackageReleaseNotes>Working state.</PackageReleaseNotes>
     </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="QuickGraphCore" Version="1.0.0" />
-    </ItemGroup>
-
 </Project>

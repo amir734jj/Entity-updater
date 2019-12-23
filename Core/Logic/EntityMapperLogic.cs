@@ -3,23 +3,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using EntityUpdater.Interfaces;
+using static EntityUpdater.Logic.TopologicalSortLogic;
+using static EntityUpdater.Logic.AssignmentLogic;
 
 namespace EntityUpdater.Logic
 {
-    public class EntityMapperLogic : TopologicalSortLogic
+    public class EntityMapperLogic
     {
-        public EntityMapperLogic(IReadOnlyCollection<IEntityProfile> profiles) : base(profiles)
+        private readonly IDictionary<IEntityProfile, Action<object, object>> _updateTable;
+
+        private readonly List<IEntityProfile> _profiles;
+
+        private readonly Dictionary<Type, IEntityProfile> _profilesLookup;
+
+        public EntityMapperLogic(IReadOnlyCollection<IEntityProfile> profiles)
         {
             _updateTable = new Dictionary<IEntityProfile, Action<object, object>>();
-        }
 
-        private readonly IDictionary<IEntityProfile, Action<object, object>> _updateTable;
+            _profilesLookup = profiles.ToDictionary(x => x.Type, x => x);
+
+            _profiles = BuildGraph(profiles)().ToList();
+        }
 
         public Action<object, object> ResolveUpdate(IEntityProfile profile)
         {
             return BuildUpdate(profile, request => _updateTable[request]);
         }
-        
+
         /// <summary>
         ///     Recursive function to build update for a profile
         /// </summary>
@@ -40,39 +50,23 @@ namespace EntityUpdater.Logic
                 var entityExpr = Expression.Parameter(profile.Type);
                 var dtoExpr = Expression.Parameter(profile.Type);
 
+                Dictionary<Type, IEntityProfile> m = null;
+
                 var assignments = profile.Members
                     .Distinct()
-                    .Select(propertyInfo =>
-                    {
-                        var memberAccessExprEntity = Expression.MakeMemberAccess(entityExpr, propertyInfo);
-                        var memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, propertyInfo);
-
-                        var setterMethodInfo = propertyInfo.GetSetMethod();
-
-                        /*
-                        var updateFuncExpr = Expression.Call(
-                            genericUpdaterWithoutComparer,
-                            memberAccessExprEntity,
-                            memberAccessExprDto
-                        );
-                        */
-
-                        // Type-cast the result
-                        var castResultExpression = Expression.Convert(memberAccessExprDto, propertyInfo.PropertyType);
-
-                        // Call setter of entity
-                        var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castResultExpression);
-
-                        // Return the assignment
-                        return assignmentExpr;
-                    });
+                    .Select(propertyInfo => BuildAssignment(
+                        entityExpr,
+                        dtoExpr,
+                        propertyInfo,
+                        _profilesLookup.ContainsKey,
+                        lazyUpdater)
+                    );
 
                 // Build lambda expression
-                var lambda =
-                    Expression.Lambda<Action<object, object>>(Expression.Block(assignments), entityExpr, dtoExpr);
+                var lambda = profile.TypeSafeUpdate(Expression.Block(assignments), entityExpr, dtoExpr);
 
                 // Store the function just compiled
-                _updateTable[profile] = lambda.Compile();
+                _updateTable[profile] = lambda;
 
                 // Run the build action
                 _updateTable[profile](o1, o2);

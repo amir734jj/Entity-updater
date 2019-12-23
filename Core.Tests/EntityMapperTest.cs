@@ -30,13 +30,11 @@ namespace Core.Tests
             var entity = _fixture.Create<DummyModel>();
             var dto = _fixture.Create<DummyModel>();
 
+            // Act
             _entityMapper.Update(entity, dto);
 
-            // Act
-            var result = entity.Equals(dto);
-
             // Assert
-            Assert.True(result);
+            Assert.Equal(entity, dto);
         }
     }
 }

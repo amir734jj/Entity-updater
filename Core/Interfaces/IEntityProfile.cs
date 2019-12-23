@@ -16,6 +16,8 @@ namespace EntityUpdater.Interfaces
         IList<PropertyInfo> Members { get; }
 
         Func<object, object, bool> Compare { get; }
+
+        Action<object, object> TypeSafeUpdate(Expression body, params ParameterExpression[] parameters);
     }
 
     public interface IMap<T>
