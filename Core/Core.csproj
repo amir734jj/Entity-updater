@@ -12,8 +12,4 @@
         <PackageReleaseNotes>Working state.</PackageReleaseNotes>
     </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="LaYumba.Functional" Version="0.10.0" />
-    </ItemGroup>
-
 </Project>

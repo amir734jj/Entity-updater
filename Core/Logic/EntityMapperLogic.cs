@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using EntityUpdater.Interfaces;
-using LaYumba.Functional.Option;
+using EntityUpdater.Utility;
 using static EntityUpdater.Logic.TopologicalSortLogic;
-using static EntityUpdater.Logic.AssignmentLogic;
-using static LaYumba.Functional.F;
 
 namespace EntityUpdater.Logic
 {
@@ -29,17 +28,15 @@ namespace EntityUpdater.Logic
 
         public Action<object, object> ResolveUpdate(IEntityProfile profile)
         {
-            return BuildUpdate(profile, request => _updateTable[request]);
+            return BuildUpdate(profile);
         }
 
         /// <summary>
         ///     Recursive function to build update for a profile
         /// </summary>
         /// <param name="profile"></param>
-        /// <param name="lazyUpdater"></param>
         /// <returns></returns>
-        public Action<object, object> BuildUpdate(IEntityProfile profile,
-            Func<IEntityProfile, Action<object, object>> lazyUpdater)
+        public Action<object, object> BuildUpdate(IEntityProfile profile)
         {
             // This is to avoid infinite recursion
             if (_updateTable.ContainsKey(profile))
@@ -52,18 +49,13 @@ namespace EntityUpdater.Logic
 
             return (o1, o2) =>
             {
-                Dictionary<Type, IEntityProfile> m = null;
-
                 var assignments = profile.Members
                     .Distinct()
                     .Select(propertyInfo => BuildAssignment(
-                            propertyInfo,
-                            _profilesLookup.ContainsKey,
-                            x => _profilesLookup.GetValueOrDefault(x, null),
-                            lazyUpdater,
-                            entityExpr,
-                            dtoExpr
-                        )
+                        profile,
+                        propertyInfo,
+                        entityExpr,
+                        dtoExpr)
                     );
 
                 // Build lambda expression
@@ -75,6 +67,52 @@ namespace EntityUpdater.Logic
                 // Run the build action
                 _updateTable[profile](o1, o2);
             };
+        }
+
+        public Expression BuildAssignment(
+            IEntityProfile currentProfile,
+            PropertyInfo propertyInfo,
+            ParameterExpression entityExpr,
+            ParameterExpression dtoExpr
+        )
+        {
+            var memberAccessExprEntity = Expression.MakeMemberAccess(entityExpr, propertyInfo);
+            Expression memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, propertyInfo);
+            var currentExpression = memberAccessExprDto;
+
+            var setterMethodInfo = propertyInfo.GetSetMethod();
+
+            // There is an exisiting mapper profile ...
+            if (_profilesLookup.ContainsKey(propertyInfo.PropertyType) &&
+                _profilesLookup[propertyInfo.PropertyType] != currentProfile)
+            {
+                var actionFunction = BuildUpdate(currentProfile);
+
+                var returnTarget = Expression.Label();
+
+                currentExpression = Expression.Block(
+                    Expression.Invoke(
+                        Expression.Constant(actionFunction),
+                        memberAccessExprEntity,
+                        memberAccessExprDto
+                    ),
+                    Expression.Goto(returnTarget),
+                    Expression.Label(returnTarget)
+                );
+            }
+            else if (propertyInfo.PropertyType.IsGenericType && MemberUpdaterUtility.SpecialTypes.Contains(propertyInfo.PropertyType.GetGenericTypeDefinition()))
+            {
+                
+            }
+
+            // Type-cast the result
+            var castResultExpression = Expression.Convert(currentExpression, propertyInfo.PropertyType);
+
+            // Call setter of entity
+            var assignmentExpr = Expression.Call(entityExpr, setterMethodInfo, castResultExpression);
+
+            // Return the assignment
+            return assignmentExpr;
         }
     }
 }

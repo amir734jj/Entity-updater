@@ -15,6 +15,14 @@ namespace EntityUpdater.Utility
 
         public static readonly MethodInfo UpdatePropertyWithoutComparerMethodInfo = Instance.GetType()
             .GetMethod(nameof(UpdatePropertyWithoutComparer), BindingFlags.Public | BindingFlags.Static);
+
+        public static readonly Type[] SpecialTypes = new[]
+        {
+            typeof(IList),
+            typeof(List<>),
+            typeof(IDictionary),
+            typeof(Dictionary<,>)
+        };
         
         // ReSharper disable once UnusedMember.Global
         // ReSharper disable once MemberCanBePrivate.Global
