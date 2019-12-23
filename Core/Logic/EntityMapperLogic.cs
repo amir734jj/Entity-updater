@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using EntityUpdater.Interfaces;
+using LaYumba.Functional.Option;
 using static EntityUpdater.Logic.TopologicalSortLogic;
 using static EntityUpdater.Logic.AssignmentLogic;
+using static LaYumba.Functional.F;
 
 namespace EntityUpdater.Logic
 {
@@ -45,21 +47,23 @@ namespace EntityUpdater.Logic
                 return _updateTable[profile];
             }
 
+            var entityExpr = Expression.Parameter(profile.Type);
+            var dtoExpr = Expression.Parameter(profile.Type);
+
             return (o1, o2) =>
             {
-                var entityExpr = Expression.Parameter(profile.Type);
-                var dtoExpr = Expression.Parameter(profile.Type);
-
                 Dictionary<Type, IEntityProfile> m = null;
 
                 var assignments = profile.Members
                     .Distinct()
                     .Select(propertyInfo => BuildAssignment(
-                        entityExpr,
-                        dtoExpr,
-                        propertyInfo,
-                        _profilesLookup.ContainsKey,
-                        lazyUpdater)
+                            propertyInfo,
+                            _profilesLookup.ContainsKey,
+                            x => _profilesLookup.GetValueOrDefault(x, null),
+                            lazyUpdater,
+                            entityExpr,
+                            dtoExpr
+                        )
                     );
 
                 // Build lambda expression

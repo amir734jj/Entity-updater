@@ -7,25 +7,33 @@ namespace EntityUpdater.Logic
 {
     public static class AssignmentLogic
     {
-        public static Expression BuildAssignment(Expression entityExpr, Expression dtoExpr, PropertyInfo propertyInfo,
-            Func<Type, bool> anyProfile, 
-            Func<IEntityProfile, Action<object, object>> lazyUpdater)
+        public static Expression BuildAssignment(PropertyInfo propertyInfo,
+            Func<Type, bool> anyProfile,
+            Func<Type, IEntityProfile> getProfile,
+            Func<IEntityProfile, Action<object, object>> lazyUpdater,
+            Expression entityExpr = null,
+            Expression dtoExpr = null
+        )
         {
             var memberAccessExprEntity = Expression.MakeMemberAccess(entityExpr, propertyInfo);
-            var memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, propertyInfo);
+            Expression memberAccessExprDto = Expression.MakeMemberAccess(dtoExpr, propertyInfo);
 
             var setterMethodInfo = propertyInfo.GetSetMethod();
 
             // There is an exisiting mapper profile ...
             if (anyProfile(propertyInfo.PropertyType))
             {
-                
+                var entityPropExpr = Expression.Parameter(propertyInfo.PropertyType);
+                Expression dtoPropExpr = Expression.Parameter(propertyInfo.PropertyType);
+
+                var profile = getProfile(propertyInfo.PropertyType);
+
+                memberAccessExprDto = BuildAssignment(propertyInfo, anyProfile, getProfile, lazyUpdater, entityPropExpr, entityPropExpr);
             }
             else
             {
-                
             }
-            
+
 
             // Type-cast the result
             var castResultExpression = Expression.Convert(memberAccessExprDto, propertyInfo.PropertyType);
